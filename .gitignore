@@ -15,4 +15,13 @@ wheels/
 # Secret files
 .env
 
+# IDE files
 .vscode/
+
+# TMP DB
+db.sqlite3
+
+#VPN configuration files
+clientsTable*
+wg0.conf
+server.json
