@@ -14,6 +14,7 @@ from telegram_bot.helpers.config_generator import generate_vless_config, generat
 
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 @router.message(Command('getvless'))
@@ -29,7 +30,9 @@ async def get_vless_handler(message: types.Message, user: VPNUser, expires: date
         await progress_message.edit_text(str(e))
 
 
-@router.message(Command('getwg'))
+# XXX Отказываемся от поддержки AmneziaWG,
+# так как протокол теперь полностью блокируется
+# @router.message(Command('getwg'))
 async def get_wg_handler(message: types.Message, user: VPNUser, expires: datetime | None = None):
     """Обработчик команды /getwg для получения AmneziaWG-конфига."""
 
@@ -46,7 +49,7 @@ async def get_wg_handler(message: types.Message, user: VPNUser, expires: datetim
         try:
             os.remove(wg_config.tmp_filepath)
         except OSError:
-            logging.exception('Не удалось удалить временный файл %s', wg_config.tmp_filepath)
+            logger.exception('Не удалось удалить временный файл %s', wg_config.tmp_filepath)
     except ValueError as e:
         await progress_message.edit_text(str(e))
 
@@ -60,11 +63,13 @@ async def list_configs(message: types.Message, user: VPNUser):
     # Для каждого конфига выводим отдельное сообщение с кнопкой
     for cfg in configs:
         kb = InlineKeyboardBuilder()
-        kb.button(text='🔄 Сменить протокол', callback_data=f'change_proto:{cfg.__class__.__name__}:{cfg.id}')
+        if isinstance(cfg, AmneziaWGConfig):
+            kb.button(text='🔄 Сменить протокол', callback_data=f'change_proto:{cfg.__class__.__name__}:{cfg.id}')
+        else:
+            kb.button(text='⏱ Продлить', callback_data=f'extend_config:{cfg.id}')
         # XXX Отключено до реализации отдельной модели для покупки,
         # чтобы при удалении и создании дата истечения не менялась
         # kb.button(text='❌ Удалить', callback_data=f'delete_config:{cfg.__class__.__name__}:{cfg.id}')  # noqa: ERA001
-        kb.button(text='⏱ Продлить', callback_data=f'extend_config:{cfg.id}')
         kb.button(text='📋 Получить конфиг', callback_data=f'get_config:{cfg.__class__.__name__}:{cfg.id}')
         kb.adjust(1, 2)
 
@@ -75,6 +80,8 @@ async def list_configs(message: types.Message, user: VPNUser):
                 f'ID: `{cfg.client_id}`\n'
                 f'Истекает: {cfg.expires_at:%d-%m-%Y}\n'
                 f'Статус: {"✅ Активен" if cfg.is_active else "❌ Неактивен"}'
+                f'**\n\n*Важно!*\nAmneziaWG блокируется в России, измените '
+                f'свои AmneziaWG протоколы на VLESS, нажав кнопку под конфигом.'
             )
         elif isinstance(cfg, VLESSConfig):
             text = (
@@ -124,7 +131,7 @@ async def confirm_change_protocol_cb(cq: types.CallbackQuery, user: VPNUser):
         await cq.answer('❌ Конфиг не найден', show_alert=True)
         return
     except Exception:
-        logging.exception('Ошибка при удалении конфига')
+        logger.exception('Ошибка при удалении конфига')
         await cq.answer('❌ Ошибка при удалении конфига', show_alert=True)
         return
 
@@ -145,7 +152,7 @@ async def confirm_change_protocol_cb(cq: types.CallbackQuery, user: VPNUser):
             try:
                 os.remove(wg_config.tmp_filepath)
             except OSError:
-                logging.exception('Не удалось удалить временный файл %s', wg_config.tmp_filepath)
+                logger.exception('Не удалось удалить временный файл %s', wg_config.tmp_filepath)
     except ValueError as e:
         await cq.message.edit_text(str(e))
 
@@ -170,7 +177,7 @@ async def delete_config_cb(cq: types.CallbackQuery, user: VPNUser):
     except Model.DoesNotExist:
         await cq.answer('❌ Конфиг не найден', show_alert=True)
     except Exception:
-        logging.exception('Ошибка при удалении конфига')
+        logger.exception('Ошибка при удалении конфига')
         await cq.answer('❌ Ошибка при удалении конфига', show_alert=True)
 
 
@@ -196,11 +203,11 @@ async def get_config_cb(cq: types.CallbackQuery, user: VPNUser):
             try:
                 os.remove(tmp_filepath)
             except OSError:
-                logging.exception('Не удалось удалить временный файл %s', tmp_filepath)
+                logger.exception('Не удалось удалить временный файл %s', tmp_filepath)
 
         await cq.answer()
     except Exception:
-        logging.exception('Ошибка при получении конфига')
+        logger.exception('Ошибка при получении конфига')
         await cq.answer('❌ Ошибка при получении конфига', show_alert=True)
 
 

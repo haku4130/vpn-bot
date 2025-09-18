@@ -25,3 +25,4 @@ db.sqlite3
 clientsTable*
 wg0.conf
 server.json
+new-server.json

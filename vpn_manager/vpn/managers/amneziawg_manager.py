@@ -1,6 +1,6 @@
 import json
 
-from config.env_constants import CONFIG_PATH_WG, SSH_HOST, WG_CONTAINER, WG_PRESHARED_KEY
+from config.env_constants import CONFIG_PATH_WG, WG_CONTAINER, WG_PRESHARED_KEY
 from wgconfig import WGConfig
 from wireguard_tools import WireguardKey
 
@@ -94,7 +94,7 @@ class WGManager(BaseConfigManager):
         new_conf.add_peer(server_public_key)
         new_conf.add_attr(server_public_key, 'PresharedKey', preshared_key)
         new_conf.add_attr(server_public_key, 'AllowedIPs', '0.0.0.0/0,::/0')
-        new_conf.add_attr(server_public_key, 'Endpoint', f'{SSH_HOST}:46446')
+        new_conf.add_attr(server_public_key, 'Endpoint', f'{self.server_ip_address}:46446')
         new_conf.add_attr(server_public_key, 'PersistentKeepalive', '25')
 
         new_conf.write_file()

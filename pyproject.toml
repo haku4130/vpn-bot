@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3.20.0.post0",
     "django>=5.2.3",
+    "django-stubs==1.2.0",
+    "grpcio>=1.74.0",
+    "grpcio-tools>=1.74.0",
     "paramiko>=3.5.1",
     "psycopg>=3.2.9",
     "python-dotenv>=1.1.1",

@@ -28,7 +28,6 @@ dp.callback_query.middleware(UserCheckMiddleware())
 async def set_main_menu(bot: Bot):
     commands = [
         BotCommand(command='getvless', description='Получить VLESS-конфиг'),
-        BotCommand(command='getwg', description='Получить AmneziaWG-конфиг'),
         BotCommand(command='configs', description='Мои конфиги'),
         BotCommand(command='help', description='Помощь/Инструкция/Справка'),
     ]

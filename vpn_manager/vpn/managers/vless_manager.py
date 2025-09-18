@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from config.env_constants import CONFIG_PATH_XRAY, SSH_HOST, XRAY_CONTAINER
+from config.env_constants import CONFIG_PATH_XRAY, XRAY_CONTAINER
 from django.utils import timezone
 
 from vpn.managers.base_config_manager import BaseConfigManager
@@ -84,7 +84,7 @@ class XRayManager(BaseConfigManager):
     @staticmethod
     def get_vless_url_template():
         return (
-            f'vless://{{client_id}}@{SSH_HOST}:443?encryption=none&security=reality'
-            f'&type=tcp&flow=xtls-rprx-vision&fp=chrome&pbk={{public_key}}'
-            f'&sni=www.googletagmanager.com&sid=8a48dd5300642057#{{client_name}}'
+            'vless://{{client_id}}@{{server_ip_address}}:443?encryption=none&security=reality'
+            '&type=tcp&flow=xtls-rprx-vision&fp=chrome&pbk={{public_key}}'
+            '&sni=www.googletagmanager.com&sid=8a48dd5300642057#{{client_name}}'
         )

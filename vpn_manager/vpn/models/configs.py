@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from vpn.managers.amneziawg_manager import WGManager
 from vpn.managers.vless_manager import XRayManager
+from vpn.models.servers import VPNServer
 from vpn.models.users import VPNUser
 from vpn.utils.amneziawg_utils import generate_wg_config, get_existing_wg_config, remove_wg_config
 from vpn.utils.vless_utils import generate_vless_config, get_vless_url_by_id, remove_vless_config
@@ -14,7 +15,7 @@ from vpn.utils.vless_utils import generate_vless_config, get_vless_url_by_id, re
 def handle_config_generation(func):
     @wraps(func)
     def wrapper(self: 'VLESSConfig | AmneziaWGConfig', *args, **kwargs):
-        is_new = self._state.adding
+        is_new = self._state.adding  # type: ignore
         old_active = None
 
         if not is_new:
@@ -40,10 +41,18 @@ def handle_config_generation(func):
 
 
 class BaseVPNConfig(models.Model):
-    user: models.ForeignKey[VPNUser] = models.ForeignKey('VPNUser', on_delete=models.CASCADE, related_name='%(class)ss')
-    created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField(blank=True, help_text='Дата окончания действия конфигурации')
-    is_active = models.BooleanField(default=True)
+    user: models.ForeignKey[VPNUser] = models.ForeignKey('VPNUser', on_delete=models.CASCADE, related_name='%(class)ss')  # type: ignore[type-arg]
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    expires_at: models.DateTimeField = models.DateTimeField(
+        blank=True,
+        help_text='Дата окончания действия конфигурации',
+    )
+    is_active: models.BooleanField = models.BooleanField(default=True)
+    server: models.ForeignKey[VPNServer] = models.ForeignKey(  # type: ignore[type-arg]
+        VPNServer,
+        on_delete=models.CASCADE,
+        related_name='%(class)ss',
+    )
 
     _remove_config: Callable
     _config_manager: type[XRayManager | WGManager]
@@ -89,7 +98,7 @@ class BaseVPNConfig(models.Model):
 
 
 class VLESSConfig(BaseVPNConfig):
-    client_id = models.UUIDField(blank=True, help_text='Добавляется автоматически')  # UUID для VLESS
+    client_id: models.UUIDField = models.UUIDField(blank=True, help_text='Добавляется автоматически')  # UUID для VLESS
     _vless_url: str
 
     _remove_config = remove_vless_config
@@ -112,17 +121,17 @@ class VLESSConfig(BaseVPNConfig):
 
 
 class AmneziaWGConfig(BaseVPNConfig):
-    client_id = models.CharField(
+    client_id: models.CharField = models.CharField(
         max_length=255,
         blank=True,
         help_text='Добавляется автоматически',
     )  # PublicKey для AmneziaWG
-    private_key = models.CharField(
+    private_key: models.CharField = models.CharField(
         max_length=255,
         blank=True,
         help_text='Приватный ключ AmneziaWG, необходимый для восстановления конфигурации',
     )
-    allowed_ip = models.CharField(
+    allowed_ip: models.CharField = models.CharField(
         max_length=255,
         blank=True,
         help_text='IP-адрес, разрешенный для этого клиента',

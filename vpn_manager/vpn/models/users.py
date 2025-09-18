@@ -5,13 +5,16 @@ from django.utils import timezone
 
 
 class VPNUser(models.Model):
-    telegram_id = models.BigIntegerField(unique=True, help_text='Числовой Telegram user ID')
-    username = models.CharField(max_length=255, help_text='Telegram-ник с @', null=True, blank=True)
-    full_name = models.CharField(max_length=255, help_text='Человекочитаемое имя пользователя')
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    available_configs_count = models.PositiveIntegerField(default=0)
-    is_admin = models.BooleanField(default=False, help_text='Для админа нет ограничения на количество конфигов')
+    telegram_id: models.BigIntegerField = models.BigIntegerField(unique=True, help_text='Числовой Telegram user ID')
+    username: models.CharField = models.CharField(max_length=255, help_text='Telegram-ник с @', null=True, blank=True)
+    full_name: models.CharField = models.CharField(max_length=255, help_text='Человекочитаемое имя пользователя')
+    is_active: models.BooleanField = models.BooleanField(default=True)
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    available_configs_count: models.PositiveIntegerField = models.PositiveIntegerField(default=0)
+    is_admin: models.BooleanField = models.BooleanField(
+        default=False,
+        help_text='Для админа нет ограничения на количество конфигов',
+    )
 
     def clean(self):
         if self.username:
@@ -36,7 +39,7 @@ class VPNUser(models.Model):
 
     @property
     def configs(self):
-        """Возвращает все конфиги пользователя (VLESS + AmneziaWG), можно итерироваться или сразу привести к списку."""
+        """Возвращает все конфиги пользователя (VLESS + AmneziaWG)."""
         return list(
             chain(
                 self.vlessconfigs.all(),  # type: ignore
@@ -71,11 +74,11 @@ class VPNUser(models.Model):
 
 
 class AccessRequest(models.Model):
-    user: models.OneToOneField[VPNUser] = models.OneToOneField('VPNUser', on_delete=models.DO_NOTHING)
-    requested_at = models.DateTimeField(default=timezone.now)
-    is_approved = models.BooleanField(default=False)
-    processed_at = models.DateTimeField(blank=True, null=True)
-    comment = models.TextField(blank=True, help_text='Комментарий администратора')
+    user: models.OneToOneField[VPNUser] = models.OneToOneField('VPNUser', on_delete=models.DO_NOTHING)  # type: ignore[type-arg]
+    requested_at: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    is_approved: models.BooleanField = models.BooleanField(default=False)
+    processed_at: models.DateTimeField = models.DateTimeField(blank=True, null=True)
+    comment: models.TextField = models.TextField(blank=True, help_text='Комментарий администратора')
 
     def __str__(self):
         status = '✅' if self.is_approved else '⏳'

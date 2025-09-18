@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 
 from .models.configs import AmneziaWGConfig, VLESSConfig, VPNUser
+from .models.servers import ServerProtocol, VPNServer
 
 
 class VLESSConfigInline(admin.TabularInline):
@@ -16,6 +17,11 @@ class AmneziaWGConfigInline(admin.TabularInline):
     extra = 0
     fields = ('client_id', 'expires_at', 'is_active')
     readonly_fields = ('client_id',)
+
+
+class ServerProtocolInline(admin.TabularInline):
+    model = ServerProtocol
+    extra = 0
 
 
 # == Регистрация моделей в админке ==
@@ -47,8 +53,8 @@ class VPNUserAdmin(admin.ModelAdmin):
 
 @admin.register(VLESSConfig)
 class VLESSConfigAdmin(admin.ModelAdmin):
-    list_display = ('client_id', 'user', 'expires_at', 'is_active')
-    readonly_fields = ('user', 'client_id')
+    list_display = ('client_id', 'user', 'expires_at', 'is_active', 'server')
+    readonly_fields = ('user', 'client_id', 'server')
     list_filter = ('is_active', 'expires_at')
     search_fields = ('user__username', 'user__telegram_id', 'client_id')
     creation_fields = ('user', 'expires_at', 'is_active')
@@ -64,8 +70,8 @@ class VLESSConfigAdmin(admin.ModelAdmin):
 
 @admin.register(AmneziaWGConfig)
 class AmneziaWGConfigAdmin(admin.ModelAdmin):
-    list_display = ('short_client_id', 'user', 'expires_at', 'allowed_ip', 'is_active')
-    readonly_fields = ('user', 'private_key', 'client_id', 'allowed_ip')
+    list_display = ('short_client_id', 'user', 'expires_at', 'allowed_ip', 'is_active', 'server')
+    readonly_fields = ('user', 'private_key', 'client_id', 'allowed_ip', 'server')
     list_filter = ('is_active', 'expires_at')
     search_fields = ('user__username', 'user__telegram_id', 'client_id')
     creation_fields = ('user', 'expires_at', 'is_active')
@@ -79,8 +85,28 @@ class AmneziaWGConfigAdmin(admin.ModelAdmin):
 
     def get_fields(self, request, obj=None):
         if obj:
-            return ('user', 'client_id', 'private_key', 'allowed_ip', 'expires_at', 'is_active')
+            return ('user', 'client_id', 'private_key', 'allowed_ip', 'expires_at', 'is_active', 'server')
         return self.creation_fields
+
+
+@admin.register(VPNServer)
+class VPNServerAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+        'host',
+        'ssh_port',
+        'ssh_user',
+        'list_protocols',
+        'max_configs',
+        'issued_configs',
+        'is_active',
+        'created_at',
+    )
+    inlines = (ServerProtocolInline,)
+
+    @admin.display(description='Protocols')
+    def list_protocols(self, obj):
+        return ', '.join(p.protocol for p in obj.protocols.all())
 
 
 # == Настройки админки ==

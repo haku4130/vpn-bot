@@ -2,7 +2,11 @@ import json
 import logging
 import os
 
+from vpn.models.servers import VPNServer
 from vpn.utils.ssh_utils import execute_ssh_command, get_file_from_container, get_ssh_client, put_file_to_container
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseConfigManager:
@@ -13,8 +17,9 @@ class BaseConfigManager:
     local_key: str = '/tmp/server_pub.key'
     server_public_key: str
 
-    def __init__(self, ssh=None):
-        self.ssh = ssh or get_ssh_client()
+    def __init__(self, server: VPNServer, ssh=None):
+        self.server = server
+        self.ssh = ssh or get_ssh_client(self.server.host)
         self.ssh.sftp_client = self.ssh.open_sftp()
         self.local_conf = f'/tmp/{self.config_filename}'
         self.local_table = f'/tmp/{self.clients_table_filename}.json'
@@ -82,7 +87,7 @@ class BaseConfigManager:
             os.remove(self.local_conf)
             os.remove(self.local_table)
         except OSError:
-            logging.exception('Не удалось удалить временные файлы %s или %s', self.local_conf, self.local_table)
+            logger.exception('Не удалось удалить временные файлы %s или %s', self.local_conf, self.local_table)
 
     def restart(self):
         execute_ssh_command(self.ssh, f'sudo docker restart {self.container_name}')
