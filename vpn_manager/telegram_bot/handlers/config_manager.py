@@ -17,9 +17,9 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-@router.message(Command('getvless'))
+@router.message(Command('getconfig'))
 async def get_vless_handler(message: types.Message, user: VPNUser, expires: datetime | None = None):
-    """Обработчик команды /getvless для получения VLESS-конфига."""
+    """Обработчик команды /getconfig для получения VLESS-конфига."""
 
     progress_message = await message.answer('🔄 Генерируем VLESS-конфиг...')
 
@@ -73,11 +73,14 @@ async def list_configs(message: types.Message, user: VPNUser):
         kb.button(text='📋 Получить конфиг', callback_data=f'get_config:{cfg.__class__.__name__}:{cfg.id}')
         kb.adjust(1, 2)
 
+        server_name = await sync_to_async(lambda: cfg.server.name)()  # noqa: B023
+
         # кратко описываем конфиг
         if isinstance(cfg, AmneziaWGConfig):
             text = (
                 f'🔐 *AmneziaWG*\n'
                 f'ID: `{cfg.client_id}`\n'
+                f'Сервер: {server_name}\n'
                 f'Истекает: {cfg.expires_at:%d-%m-%Y}\n'
                 f'Статус: {"✅ Активен" if cfg.is_active else "❌ Неактивен"}'
                 f'**\n\n*Важно!*\nAmneziaWG блокируется в России, измените '
@@ -87,6 +90,7 @@ async def list_configs(message: types.Message, user: VPNUser):
             text = (
                 f'🔑 *VLESS*\n'
                 f'ID: `{cfg.client_id}`\n'
+                f'Сервер: {server_name}\n'
                 f'Истекает: {cfg.expires_at:%d-%m-%Y}\n'
                 f'Статус: {"✅ Активен" if cfg.is_active else "❌ Неактивен"}'
             )
@@ -191,6 +195,7 @@ async def get_config_cb(cq: types.CallbackQuery, user: VPNUser):
         await cq.message.edit_text('🔄 Получаем информацию о конфиге...')
         if isinstance(config, VLESSConfig):
             _, vless_url = await sync_to_async(config.get_vless_url)()
+            await cq.message.delete()
             await cq.message.answer(f'✅ Ваш VLESS-конфиг:\n```\n{vless_url}\n```', parse_mode='Markdown')
         elif isinstance(config, AmneziaWGConfig):
             tmp_filepath = await sync_to_async(config.get_existing_config)()

@@ -17,17 +17,17 @@ django.setup()
 
 
 from telegram_bot import bot, dp  # noqa: E402
-from telegram_bot.handlers import access_control, admin, config_manager, help, start  # noqa: E402
-from telegram_bot.middleware import UserCheckMiddleware  # noqa: E402
+from telegram_bot.handlers import access_control, admin, config_manager, help_handler, start  # noqa: E402
+from telegram_bot.middleware.authorization import AuthorizationMiddleware  # noqa: E402
 
 
-dp.message.middleware(UserCheckMiddleware())
-dp.callback_query.middleware(UserCheckMiddleware())
+dp.message.middleware(AuthorizationMiddleware())
+dp.callback_query.middleware(AuthorizationMiddleware())
 
 
 async def set_main_menu(bot: Bot):
     commands = [
-        BotCommand(command='getvless', description='Получить VLESS-конфиг'),
+        BotCommand(command='getconfig', description='Получить VLESS-конфиг'),
         BotCommand(command='configs', description='Мои конфиги'),
         BotCommand(command='help', description='Помощь/Инструкция/Справка'),
     ]
@@ -36,7 +36,7 @@ async def set_main_menu(bot: Bot):
 
 async def main():
     await set_main_menu(bot)
-    dp.include_routers(access_control.router, config_manager.router, admin.router, help.router, start.router)
+    dp.include_routers(access_control.router, config_manager.router, admin.router, help_handler.router, start.router)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 

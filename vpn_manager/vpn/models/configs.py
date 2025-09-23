@@ -22,8 +22,12 @@ def handle_config_generation(func):
             old = type(self).objects.get(pk=self.pk)
             old_active = old.is_active
 
-        # если создаётся — вызываем специфичный для класса генератор
+        # если создаётся новый конфиг — выбираем свободный сервер и вызываем специфичный для класса генератор
         if is_new:
+            server = VPNServer.get_least_loaded()
+            if not server:
+                raise RuntimeError('Нет доступных серверов для выдачи конфигов')
+            self.server = server
             self._handle_config_generation()
 
         self.full_clean()
@@ -31,9 +35,9 @@ def handle_config_generation(func):
 
         # если объект уже был, и поменяли is_active — синхронизируем сервер
         if not is_new and old_active != self.is_active:
-            with type(self)._config_manager() as mgr:  # noqa: SLF001
+            with type(self)._config_manager(self.server) as mgr:  # noqa: SLF001
                 if self.is_active:
-                    mgr.enable_client(str(self.client_id))
+                    mgr.enable_client(str(self.client_id), self.user.username)
                 else:
                     mgr.disable_client(str(self.client_id))
 
@@ -85,7 +89,7 @@ class BaseVPNConfig(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        type(self)._remove_config(str(self.client_id))  # type: ignore  # noqa: SLF001
+        type(self)._remove_config(str(self.client_id), self.server)  # type: ignore  # noqa: SLF001
         super().delete(*args, **kwargs)
 
     def is_expired(self):
@@ -105,16 +109,14 @@ class VLESSConfig(BaseVPNConfig):
     _config_manager = XRayManager
 
     def _handle_config_generation(self):
-        client_id, url = generate_vless_config(f'{self.user.username}_{timezone.now():%d-%m-%Y}')
-        self.client_id = client_id
-        self._vless_url = url
+        self.client_id, self._vless_url = generate_vless_config(self.user.username, self.server)
 
     @property
     def generated_url(self):
         return self._vless_url
 
     def get_vless_url(self):
-        return get_vless_url_by_id(self.client_id, self.user.username)
+        return get_vless_url_by_id(self.client_id, self.user.username, self.server)
 
     def __str__(self):
         return f'VLESS config for {self.user.username} (Expires: {self.expires_at})'
@@ -142,11 +144,11 @@ class AmneziaWGConfig(BaseVPNConfig):
     _config_manager = WGManager
 
     def _handle_config_generation(self):
-        pub, priv, _, ip, filepath = generate_wg_config(f'{self.user.username}_{timezone.now():%d-%m-%Y}')
+        pub, priv, _, ip, filepath = generate_wg_config(f'{self.user.username}_{timezone.now():%d-%m-%Y}', self.server)
         self.client_id = pub
         self.private_key = priv
         self.allowed_ip = ip
-        self._tmp_filepath = filepath
+        self._tmp_filepath = str(filepath)
 
     @property
     def tmp_filepath(self):
@@ -154,9 +156,10 @@ class AmneziaWGConfig(BaseVPNConfig):
 
     def get_existing_config(self):
         return get_existing_wg_config(
-            public_key=self.client_id,
-            private_key=self.private_key,
-            client_name=self.user.username,
+            self.client_id,
+            self.private_key,
+            self.user.username,
+            self.server,
             allowed_ip=self.allowed_ip,
         )
 

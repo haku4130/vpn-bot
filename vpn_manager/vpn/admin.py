@@ -5,18 +5,19 @@ from .models.configs import AmneziaWGConfig, VLESSConfig, VPNUser
 from .models.servers import ServerProtocol, VPNServer
 
 
-class VLESSConfigInline(admin.TabularInline):
-    model = VLESSConfig
+class BaseConfigInline(admin.TabularInline):
+    model: type[VLESSConfig | AmneziaWGConfig]
     extra = 0  # не показывать пустые формы
-    fields = ('client_id', 'expires_at', 'is_active')
-    readonly_fields = ('client_id',)
+    fields = ('client_id', 'server', 'expires_at', 'is_active')
+    readonly_fields = ('client_id', 'server')
 
 
-class AmneziaWGConfigInline(admin.TabularInline):
+class VLESSConfigInline(BaseConfigInline):
+    model = VLESSConfig
+
+
+class AmneziaWGConfigInline(BaseConfigInline):
     model = AmneziaWGConfig
-    extra = 0
-    fields = ('client_id', 'expires_at', 'is_active')
-    readonly_fields = ('client_id',)
 
 
 class ServerProtocolInline(admin.TabularInline):
@@ -94,13 +95,11 @@ class VPNServerAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'host',
-        'ssh_port',
-        'ssh_user',
         'list_protocols',
         'max_configs',
         'issued_configs',
+        'location',
         'is_active',
-        'created_at',
     )
     inlines = (ServerProtocolInline,)
 
