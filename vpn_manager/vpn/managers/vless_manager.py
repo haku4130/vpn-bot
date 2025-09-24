@@ -13,11 +13,11 @@ class XRayManager(BaseConfigManager):
         self.server_protocol = server.protocols.get(protocol=ServerProtocol.VLESS)
         super().__init__(server, ssh=ssh)
 
-    def add_client(self, username):
+    def add_client(self, username: str) -> tuple[str, str]:
         client_id = str(uuid.uuid4())
         now = timezone.now()
         creation_date = now.strftime('%a %b %d %H:%M:%S %Y')
-        client_name = f'{username}_{now:%d-%m-%Y_%H:%M:%S}'
+        client_name = f'{username}_{now}'
 
         if self.server_protocol.is_clients_table_supported:
             # Обновляем clientsTable
@@ -72,8 +72,7 @@ class XRayManager(BaseConfigManager):
             json.dump(server, f, indent=4)
         self._save_conf()
 
-    def enable_client(self, client_id, username):
-        client_name = f'{username}_{timezone.now():%d-%m-%Y_%H:%M:%S}'
+    def enable_client(self, client_id, client_name):
         # Проверяем, есть ли уже в основном файле конфигурации (может быть включён)
         with open(self.local_conf) as f:
             server = json.load(f)

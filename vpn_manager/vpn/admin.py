@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.contrib.admin.utils import quote
+from django.urls import reverse
 from django.utils.html import format_html
 
 from .models.configs import AmneziaWGConfig, VLESSConfig, VPNUser
@@ -8,8 +10,18 @@ from .models.servers import ServerProtocol, VPNServer
 class BaseConfigInline(admin.TabularInline):
     model: type[VLESSConfig | AmneziaWGConfig]
     extra = 0  # не показывать пустые формы
-    fields = ('client_id', 'server', 'expires_at', 'is_active')
-    readonly_fields = ('client_id', 'server')
+    fields = ('client_id_link', 'server', 'expires_at', 'is_active')
+    readonly_fields = ('client_id_link', 'server')
+
+    @admin.display(description='Client ID')
+    def client_id_link(self, obj):
+        if not obj.pk:
+            return '-'
+        url = reverse(
+            f'admin:{obj._meta.app_label}_{obj._meta.model_name}_change',
+            args=[quote(obj.pk)],
+        )
+        return format_html('<a href="{}">{}</a>', url, obj.client_id)
 
 
 class VLESSConfigInline(BaseConfigInline):
@@ -55,6 +67,7 @@ class VPNUserAdmin(admin.ModelAdmin):
 @admin.register(VLESSConfig)
 class VLESSConfigAdmin(admin.ModelAdmin):
     list_display = ('client_id', 'user', 'expires_at', 'is_active', 'server')
+    change_form_fields = ('client_id', 'user', 'config_email', 'expires_at', 'is_active', 'server')
     readonly_fields = ('user', 'client_id', 'server')
     list_filter = ('is_active', 'expires_at')
     search_fields = ('user__username', 'user__telegram_id', 'client_id')
@@ -65,7 +78,7 @@ class VLESSConfigAdmin(admin.ModelAdmin):
 
     def get_fields(self, request, obj=None):
         if obj:
-            return self.list_display
+            return self.change_form_fields
         return self.creation_fields
 
 

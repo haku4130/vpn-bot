@@ -37,7 +37,7 @@ def handle_config_generation(func):
         if not is_new and old_active != self.is_active:
             with type(self)._config_manager(self.server) as mgr:  # noqa: SLF001
                 if self.is_active:
-                    mgr.enable_client(str(self.client_id), self.user.username)
+                    mgr.enable_client(str(self.client_id), self.config_email if isinstance(self, VLESSConfig) else None)
                 else:
                     mgr.disable_client(str(self.client_id))
 
@@ -103,13 +103,16 @@ class BaseVPNConfig(models.Model):
 
 class VLESSConfig(BaseVPNConfig):
     client_id: models.UUIDField = models.UUIDField(blank=True, help_text='Добавляется автоматически')  # UUID для VLESS
+    config_email: models.CharField = models.CharField(
+        help_text='Email для конфига (используется для сбора статистики, добавляется автоматически)',
+    )
     _vless_url: str
 
     _remove_config = remove_vless_config
     _config_manager = XRayManager
 
     def _handle_config_generation(self):
-        self.client_id, self._vless_url = generate_vless_config(self.user.username, self.server)
+        self.client_id, self.config_email, self._vless_url = generate_vless_config(self.user.username, self.server)
 
     @property
     def generated_url(self):

@@ -2,7 +2,7 @@ from vpn.managers.vless_manager import XRayManager
 from vpn.models.servers import VPNServer
 
 
-def generate_vless_config(username: str, server: VPNServer) -> tuple[str, str]:
+def generate_vless_config(username: str, server: VPNServer) -> tuple[str, str, str]:
     with XRayManager(server) as mgr:
         client_id, client_name = mgr.add_client(username)
         vless_url = mgr.get_vless_url_template().format(
@@ -11,7 +11,7 @@ def generate_vless_config(username: str, server: VPNServer) -> tuple[str, str]:
             public_key=mgr.server_protocol.public_key,
             client_name=client_name,
         )
-    return client_id, vless_url
+    return client_id, client_name, vless_url
 
 
 def remove_vless_config(client_id: str, server: VPNServer):
