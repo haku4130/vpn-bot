@@ -10,9 +10,9 @@ from vpn.utils.ssh_utils import SSHClient
 
 
 class WGManager(BaseConfigManager):
-    def __init__(self, server: VPNServer, ssh: SSHClient | None = None):
+    def __init__(self, server: VPNServer, ssh: SSHClient | None = None, *, should_restart: bool = True):
         self.server_protocol = server.protocols.get(protocol=ServerProtocol.AMNEZIAWG)
-        super().__init__(server, ssh)
+        super().__init__(server, ssh, should_restart=should_restart)
         self.cfg = WGConfig(self.local_conf)
         self.cfg.read_file()
 

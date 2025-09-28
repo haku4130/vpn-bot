@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class BaseConfigManager:
     clients_table_filename: str = 'clientsTable'
 
-    def __init__(self, server: VPNServer, ssh: SSHClient | None = None):
+    def __init__(self, server: VPNServer, ssh: SSHClient | None = None, *, should_restart: bool = True):
         self.server = server
         self.server_protocol: ServerProtocol
         self.ssh = ssh or get_ssh_client(self.server)
@@ -26,6 +26,7 @@ class BaseConfigManager:
         self.local_conf = f'/tmp/{self.server_protocol.config_filename}'
         self.local_table = f'/tmp/{self.clients_table_filename}.json'
         self._load_files()
+        self.should_restart = should_restart
 
     def _load_files(self):
         if self.server_protocol.volumes_supported:
@@ -106,5 +107,6 @@ class BaseConfigManager:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.restart()
+        if self.should_restart:
+            self.restart()
         self.close()

@@ -20,7 +20,7 @@ def remove_vless_config(client_id: str, server: VPNServer):
 
 
 def get_vless_url_by_id(client_id: str, client_name: str, server: VPNServer) -> tuple[str, str]:
-    with XRayManager(server) as mgr:
+    with XRayManager(server, should_restart=False) as mgr:
         vless_url = mgr.get_vless_url_template().format(
             client_id=client_id,
             server_ip_address=server.host,

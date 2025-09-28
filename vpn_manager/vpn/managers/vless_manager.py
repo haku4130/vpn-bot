@@ -6,12 +6,13 @@ from django.utils import timezone
 from vpn.managers.base_config_manager import BaseConfigManager
 from vpn.models.servers import ServerProtocol, VPNServer
 from vpn.utils.ssh_utils import SSHClient
+from vpn.xray_api.xray_add_user_grpc import XrayAPI
 
 
 class XRayManager(BaseConfigManager):
-    def __init__(self, server: VPNServer, ssh: SSHClient | None = None):
+    def __init__(self, server: VPNServer, ssh: SSHClient | None = None, *, should_restart: bool = True):
         self.server_protocol = server.protocols.get(protocol=ServerProtocol.VLESS)
-        super().__init__(server, ssh=ssh)
+        super().__init__(server, ssh, should_restart=should_restart)
 
     def add_client(self, username: str) -> tuple[str, str]:
         client_id = str(uuid.uuid4())
@@ -45,6 +46,17 @@ class XRayManager(BaseConfigManager):
         with open(self.local_conf, 'w') as f:
             json.dump(server, f, indent=4)
         self._save_conf()
+
+        XrayAPI.add_user(
+            server_address=f'{self.server.host}:10085',
+            inbound_tag='vless-inbound',
+            email=client_name,
+            user_id=client_id,
+            level=0,
+        )
+
+        # вместо перезапуска просто сообщаем XRAY о новом пользователе через gRPC
+        self.should_restart = False
 
         return client_id, client_name
 

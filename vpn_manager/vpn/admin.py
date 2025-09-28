@@ -32,7 +32,7 @@ class AmneziaWGConfigInline(BaseConfigInline):
     model = AmneziaWGConfig
 
 
-class ServerProtocolInline(admin.TabularInline):
+class ServerProtocolInline(admin.StackedInline):
     model = ServerProtocol
     extra = 0
 
